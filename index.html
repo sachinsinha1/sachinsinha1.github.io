@@ -1,7 +1,360 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JPEG ↔ Binary Converter</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px dashed #e2e8f0;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .section:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        input[type="file"]:hover {
+            border-color: #667eea;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .binary-output {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin: 10px 0;
+        }
+        
+        .info {
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        
+        .success {
+            background: rgba(72, 187, 120, 0.1);
+            border-left: 4px solid #48bb78;
+            color: #2f855a;
+        }
+        
+        .error {
+            background: rgba(245, 101, 101, 0.1);
+            border-left: 4px solid #f56565;
+            color: #c53030;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+    </style>
+</head>
 <body>
-<h1>Hello World</h1>
-<p>I'm Sachin.</p>
+    <div class="container">
+        <h1>🖼️ JPEG ↔ Binary Converter</h1>
+        
+        <!-- JPEG to Binary Section -->
+        <div class="section">
+            <h2>📤 Convert JPEG to Binary</h2>
+            <input type="file" id="jpegInput" accept=".jpg,.jpeg,image/jpeg">
+            <button onclick="convertToBinary()" id="convertBtn" disabled>Convert to Binary</button>
+            <div id="originalImage"></div>
+            <div id="binaryOutput"></div>
+        </div>
+        
+        <!-- Binary to JPEG Section -->
+        <div class="section">
+            <h2>📥 Convert Binary to JPEG</h2>
+            <textarea id="binaryInput" placeholder="Paste binary data here (or use the binary from above)..."></textarea>
+            <button onclick="convertToJpeg()">Convert to JPEG</button>
+            <button onclick="useBinaryFromAbove()" id="useBinaryBtn" disabled>Use Binary from Above</button>
+            <div id="convertedImage"></div>
+        </div>
+        
+        <div class="info">
+            <strong>How it works:</strong><br>
+            1. Select a JPEG file to convert it to binary representation<br>
+            2. The binary data shows the raw bytes of the image file<br>
+            3. Copy the binary or use "Use Binary from Above" to convert back<br>
+            4. The converted image should be identical to the original
+        </div>
+    </div>
+
+    <script>
+        let currentBinary = '';
+        
+        document.getElementById('jpegInput').addEventListener('change', function(e) {
+            const convertBtn = document.getElementById('convertBtn');
+            convertBtn.disabled = !e.target.files.length;
+        });
+        
+        function convertToBinary() {
+            const fileInput = document.getElementById('jpegInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showMessage('Please select a JPEG file first.', 'error');
+                return;
+            }
+            
+            if (!file.type.includes('jpeg') && !file.type.includes('jpg')) {
+                showMessage('Please select a valid JPEG file.', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    // Show original image preview
+                    const originalDiv = document.getElementById('originalImage');
+                    originalDiv.innerHTML = `
+                        <div class="info success">
+                            <strong>Original Image:</strong><br>
+                            File: ${file.name}<br>
+                            Size: ${(file.size / 1024).toFixed(2)} KB<br>
+                            Type: ${file.type}
+                        </div>
+                        <img src="${e.target.result}" alt="Original" class="image-preview">
+                    `;
+                    
+                    // Convert to binary
+                    const arrayBuffer = e.target.result;
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    
+                    // Convert each byte to binary string
+                    let binaryString = '';
+                    for (let i = 0; i < uint8Array.length; i++) {
+                        binaryString += uint8Array[i].toString(2).padStart(8, '0');
+                        if ((i + 1) % 10 === 0) binaryString += '\n'; // Line breaks for readability
+                    }
+                    
+                    currentBinary = binaryString;
+                    
+                    // Display binary
+                    const binaryDiv = document.getElementById('binaryOutput');
+                    binaryDiv.innerHTML = `
+                        <div class="info success">
+                            <strong>Binary Conversion Complete!</strong><br>
+                            Total bytes: ${uint8Array.length}<br>
+                            Binary length: ${binaryString.replace(/\n/g, '').length} bits
+                        </div>
+                        <div class="binary-output">${binaryString}</div>
+                        <button onclick="copyBinary()" style="margin-top: 10px;">📋 Copy Binary</button>
+                    `;
+                    
+                    // Enable "Use Binary from Above" button
+                    document.getElementById('useBinaryBtn').disabled = false;
+                    
+                } catch (error) {
+                    showMessage('Error converting to binary: ' + error.message, 'error');
+                }
+            };
+            
+            reader.onerror = function() {
+                showMessage('Error reading file.', 'error');
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function convertToJpeg() {
+            const binaryInput = document.getElementById('binaryInput').value.trim();
+            
+            if (!binaryInput) {
+                showMessage('Please enter binary data.', 'error');
+                return;
+            }
+            
+            try {
+                // Remove any whitespace/newlines and validate binary
+                const cleanBinary = binaryInput.replace(/\s/g, '');
+                
+                if (!/^[01]+$/.test(cleanBinary)) {
+                    showMessage('Invalid binary data. Please use only 0s and 1s.', 'error');
+                    return;
+                }
+                
+                if (cleanBinary.length % 8 !== 0) {
+                    showMessage('Binary data length must be divisible by 8 (complete bytes).', 'error');
+                    return;
+                }
+                
+                // Convert binary to bytes
+                const bytes = [];
+                for (let i = 0; i < cleanBinary.length; i += 8) {
+                    const byte = cleanBinary.substr(i, 8);
+                    bytes.push(parseInt(byte, 2));
+                }
+                
+                // Create Uint8Array and Blob
+                const uint8Array = new Uint8Array(bytes);
+                const blob = new Blob([uint8Array], { type: 'image/jpeg' });
+                const url = URL.createObjectURL(blob);
+                
+                // Display converted image
+                const convertedDiv = document.getElementById('convertedImage');
+                convertedDiv.innerHTML = `
+                    <div class="info success">
+                        <strong>Binary to JPEG Conversion Complete!</strong><br>
+                        Converted ${bytes.length} bytes back to image<br>
+                        File size: ${(blob.size / 1024).toFixed(2)} KB
+                    </div>
+                    <img src="${url}" alt="Converted" class="image-preview" onload="this.style.display='block'" onerror="showConversionError()">
+                    <br>
+                    <a href="${url}" download="converted.jpg">
+                        <button>💾 Download Converted JPEG</button>
+                    </a>
+                `;
+                
+            } catch (error) {
+                showMessage('Error converting binary to JPEG: ' + error.message, 'error');
+            }
+        }
+        
+        function showConversionError() {
+            showMessage('The binary data does not appear to be a valid JPEG file.', 'error');
+        }
+        
+        function useBinaryFromAbove() {
+            if (currentBinary) {
+                document.getElementById('binaryInput').value = currentBinary;
+                showMessage('Binary data loaded from above conversion.', 'success');
+            } else {
+                showMessage('No binary data available. Please convert a JPEG first.', 'error');
+            }
+        }
+        
+        function copyBinary() {
+            if (currentBinary) {
+                navigator.clipboard.writeText(currentBinary.replace(/\n/g, '')).then(() => {
+                    showMessage('Binary data copied to clipboard!', 'success');
+                }).catch(() => {
+                    showMessage('Failed to copy to clipboard.', 'error');
+                });
+            }
+        }
+        
+        function showMessage(message, type = 'info') {
+            // Create temporary message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `info ${type}`;
+            messageDiv.textContent = message;
+            messageDiv.style.position = 'fixed';
+            messageDiv.style.top = '20px';
+            messageDiv.style.right = '20px';
+            messageDiv.style.zIndex = '1000';
+            messageDiv.style.minWidth = '300px';
+            
+            document.body.appendChild(messageDiv);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 3000);
+        }
+    </script>
 </body>
 </html>
